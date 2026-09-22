@@ -1,0 +1,1 @@
+Run tests with mpremote run ..\tests\..
