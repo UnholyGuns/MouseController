@@ -39,7 +39,9 @@ class InitState:
     
 class RecordState:
     myName = StateNames.NAMES[StateNames.RECORDING]
-
+    sMOVING = 0
+    sSTATIONARY = 1
+    
     def enter(self):
         print("Entering state: " + self.myName)
     
