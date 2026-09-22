@@ -1,5 +1,5 @@
-from machine import Pin, SPI
-import os
+from machine import Pin, SPI #exposes hardware
+import os #deals with the micro python filesystem abstraction, allows mounting, listdir, ...
 import sdcard
 
 print("Starting SD test")
