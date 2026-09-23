@@ -15,7 +15,7 @@ class Storage:
         self.vfs = None
         
     def init(self):
-        self.spi = spi = SPI(
+        self.spi = SPI(
             0,
             baudrate=1_000_000,
             polarity=0,
@@ -29,5 +29,22 @@ class Storage:
         self.sd = sdcard.SDCard(self.spi, self.cs)
         self.vfs = os.VfsFat(self.sd)
         os.mount(self.vfs, "/sd")
+
+        # Lets do a test file read write to verify
+        testPath = "/sd/BRUH.txt"
+        testData = "lemmiegetuhhhh"
+
+        try:
+            with open(testPath, "w") as f:
+                f.write(testData)
+
+            with open(testPath, "r") as f:
+                readData = f.read()
+
+            if readData != testData:
+                raise RuntimeError("SD read/write verification failed")
+
+        finally:
+            os.remove(testPath)
 
 
