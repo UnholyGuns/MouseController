@@ -8,12 +8,16 @@ SD_MISO_PIN = 4
 SD_CSN_PIN = 5
 
 class Storage:
-    def __init__(self):
+    def __init__(self):       
         self.spi = None
         self.cs = None
         self.sd = None
         self.vfs = None
-        
+
+        self.recordingPath = "/sd/BRUH.txt"
+        self.recordFile = None
+
+
     def init(self):
         self.spi = SPI(
             0,
@@ -31,20 +35,41 @@ class Storage:
         os.mount(self.vfs, "/sd")
 
         # Lets do a test file read write to verify
-        testPath = "/sd/BRUH.txt"
         testData = "lemmiegetuhhhh"
 
         try:
-            with open(testPath, "w") as f:
+            with open(self.recordingPath, "w") as f:
                 f.write(testData)
 
-            with open(testPath, "r") as f:
+            with open(self.recordingPath, "r") as f:
                 readData = f.read()
 
             if readData != testData:
                 raise RuntimeError("SD read/write verification failed")
 
         finally:
-            os.remove(testPath)
+            os.remove(self.recordingPath)
+
+
+
+    def startRecording(self):
+        self.recordFile = open(self.recordingPath, "w+")
+
+
+
+    def storeValue(self, posX: int, posY: int):
+        self.recordingFile.write(f"{posX},{posY}\n")
+
+
+
+    def removeValues(self, numSamples: int):
+        pass # TODO: we need to implement an algorithm here but I need the hardware to test it first
+
+
+    def stopRecording(self):
+        self.recordFile.close()
+        self.recordingFile = None
+
+
 
 

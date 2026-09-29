@@ -1,9 +1,13 @@
 from states import *
 from storage import Storage
+from servo import Servo
 
 class MouseController:
     def __init__(self):
         self.storage = Storage()
+
+        self.servoX = Servo()
+        self.servoY = Servo()
 
         self.states = {
             StateNames.IDLE: IdleState(),
@@ -12,6 +16,7 @@ class MouseController:
             StateNames.PLAYBACK: PlayState(),
             StateNames.ERROR: ErrorState()
         }
+
         self.currentState = StateNames.IDLE
         self.nextState = None
 
