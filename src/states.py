@@ -23,10 +23,10 @@ class IdleState:
         print("Entering state: " + self.myName)
     
     def run(self):
-        print("Running state: " + self.myName)
+        pass
     
     def exit(self):
-        print("Exiting state: " + self.myName)
+        pass
 
     
 class InitState:
@@ -51,32 +51,26 @@ class InitState:
     
     def run(self):
         print("Running state: " + self.myName)
-        self.controller.nextState = StateNames.RECORDING
+        self.controller.nextState = StateNames.IDLE
 
 
     
     def exit(self):
         print("Exiting state: " + self.myName)
 
+
     
 class RecordState:
     myName = StateNames.NAMES[StateNames.RECORDING]
 
-    RECORD_START_DELAY = 3
-    SAMPLE_PERIOD_MS = 20
+    SAMPLE_PERIOD_MS = 1000
 
     def __init__(self, controller):
         self.controller = controller
         self.lastRecordTime = time.ticks_ms()
-        self.recordingStarted = False
-        self.recordStartTime = 0
-
 
     def enter(self):
-        self.recordStartTime = time.ticks_add(time.ticks_ms(), self.RECORD_START_DELAY*1000)
-        self.recordingStarted = False
-        print(f"Recording starts in {self.RECORD_START_DELAY} seconds...")
-
+        print("Begin recording...")
         try:
             self.controller.storage.startRecording()
 
@@ -87,35 +81,25 @@ class RecordState:
 
     
     def run(self):
-        if not self.recordingStarted:
-            if time.ticks_diff(time.ticks_ms(), self.recordStartTime) >= 0:
-                self.recordingStarted = True
-                print("RECORDING")
-
-            return
-
         now = time.ticks_ms()
 
         if time.ticks_diff(now, self.lastRecordTime) >= self.SAMPLE_PERIOD_MS:
             self.lastRecordTime = now
 
             try:
-                posX = self.servoX.getLocation()
-                posY = self.servoY.getLocation()
+                posX = self.controller.servoX.getLocation()
+                posY = self.controller.servoY.getLocation()
                 self.controller.storage.storeValue(posX, posY)
 
             except Exception as e:
                 print("Could not store recording file during record state:", e)
-                self.controller.nextState = self.controller.StateNames.ERROR
+                self.controller.nextState = StateNames.ERROR
 
 
         
     def exit(self):
-        print("Closing the recording and removing last 3 seconds of data")
-        self.recordingStarted = False
-
         try:
-            self.controller.storage.stopRecording()
+            self.controller.storage.closeFile()
 
         except Exception as e:
             print("Could not close recording file during record state:", e)
@@ -126,14 +110,53 @@ class RecordState:
 class PlayState:
     myName = StateNames.NAMES[StateNames.PLAYBACK]
 
+    SAMPLE_PERIOD_MS = 1000
+
+
+
+    def __init__(self, controller):
+        self.controller = controller
+        self.lastRecordTime = time.ticks_ms()
+
+
+
     def enter(self):
-        print("Entering state: " + self.myName)
+        try:
+            self.controller.storage.startReading()
+
+        except Exception as e:
+            print("Could not open recording file during playback state:", e)
+            self.controller.nextState = StateNames.ERROR
+
+
     
     def run(self):
-        print("Running state: " + self.myName)
-    
+        now = time.ticks_ms()
+
+        if time.ticks_diff(now, self.lastRecordTime) >= self.SAMPLE_PERIOD_MS:
+            self.lastRecordTime = now
+
+            try:
+                posX, posY = self.controller.storage.getValues()
+                print(f"X: {posX}, Y: {posY}")
+
+            except Exception as e:
+                print("Could not retreive data playback state:", e)
+                self.controller.nextState = StateNames.ERROR
+
+
+        
     def exit(self):
-        print("Exiting state: " + self.myName)
+        print("Ending playback")
+
+        try:
+            self.controller.storage.closeFile()
+
+        except Exception as e:
+            print("Could not close recording file during record state:", e)
+            self.controller.nextState = StateNames.ERROR
+
+
 
     
 class ErrorState:

@@ -31,9 +31,13 @@ class CommandInterface:
 
             elif char == "\b":
                 self.commandBuff = self.commandBuff[:-1]
+                print(f"{char}", end="")
 
             elif len(self.commandBuff) < self.MAX_CMD_LEN: 
                 self.commandBuff += char
+                print(f"{char}", end="")
+
+            
 
 
 
@@ -61,7 +65,7 @@ class CommandInterface:
             self.printHelp()
 
         self.commandBuff = ""
-        print("> ", end="")
+        print("\n> ", end="")
 
 
 

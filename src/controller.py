@@ -13,7 +13,7 @@ class MouseController:
             StateNames.IDLE: IdleState(),
             StateNames.INIT: InitState(self), 
             StateNames.RECORDING: RecordState(self),
-            StateNames.PLAYBACK: PlayState(),
+            StateNames.PLAYBACK: PlayState(self),
             StateNames.ERROR: ErrorState()
         }
 

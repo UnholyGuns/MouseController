@@ -53,22 +53,40 @@ class Storage:
 
 
     def startRecording(self):
-        self.recordFile = open(self.recordingPath, "w+")
+        self.recordFile = open(self.recordingPath, "w")
+
+
+
+    def startReading(self):
+        self.recordFile = open(self.recordingPath, "r")
+
+
+
+    def closeFile(self):
+        self.recordFile.close()
+        self.recordingFile = None
 
 
 
     def storeValue(self, posX: int, posY: int):
-        self.recordingFile.write(f"{posX},{posY}\n")
+        self.recordFile.write(f"{posX},{posY}\n")
 
 
 
-    def removeValues(self, numSamples: int):
-        pass # TODO: we need to implement an algorithm here but I need the hardware to test it first
+    def getValues(self):
+        line = self.recordFile.readline()
 
+        if line == "":# handle End of file
+            self.recordFile.seek(0)
+            line = self.recordFile.readline()
 
-    def stopRecording(self):
-        self.recordFile.close()
-        self.recordingFile = None
+        line = line.strip()
+        parts = line.split(",")
+        posX = int(parts[0])
+        posY = int(parts[1])
+
+        return posX, posY
+
 
 
 
