@@ -64,7 +64,7 @@ class Storage:
 
     def closeFile(self):
         self.recordFile.close()
-        self.recordingFile = None
+        self.recordFile = None
 
 
 

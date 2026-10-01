@@ -44,6 +44,7 @@ class InitState:
         except Exception as e:
             print("Initialization failed:", e)
             self.controller.nextState = StateNames.ERROR
+            return
 
         print("Initialization Sucessfull!")
 
