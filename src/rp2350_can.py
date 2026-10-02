@@ -83,7 +83,8 @@ class RP2350_CAN:
 
         # can int
         self.write_byte(CANINTF, 0x00); # clean interrupt flag
-        self.write_byte(CANINTE, 0x01); # Receive Buffer 0 Full Interrupt Enable Bit
+        # Enable interrupts for both receive buffers
+        self.write_byte(CANINTE, 0x03)
 
         self.write_byte(CANCTRL, REQOP_NORMAL | CLKOUT_ENABLED)
         dummy = self.read_byte(CANSTAT)
@@ -114,34 +115,77 @@ class RP2350_CAN:
             self.write_byte(TXB0D0 + i, data[i])
         self.write_byte(TXB0CTRL, 0x08)
     
-    def recv(self):
-        RXB0SIDH = 0x61
-        RXB0SIDL = 0x62
-        CANINTF = 0x2C
-        CANINTE = 0x2B
-        RXB0DLC = 0x65
-        RXB0D0 = 0x66
-        
-        if self.recv_flag == False:
-            return None
-        self.recv_flag = False
-        
-        sid_h = self.read_byte(RXB0SIDH)
-        sid_l = self.read_byte(RXB0SIDL)
+    def _read_rx_buffer(self, sidh_addr, dlc_addr, data_addr):
+        """
+        Read one standard CAN frame from an XL2515 receive buffer.
+
+        Returns:
+            (can_id, data)
+        """
+
+        sid_h = self.read_byte(sidh_addr)
+        sid_l = self.read_byte(sidh_addr + 1)
+
+        # Standard 11-bit CAN identifier
         can_id = (sid_h << 3) | (sid_l >> 5)
-        print("ID:", hex(can_id))
-        
-        while True:
-            if (self.read_byte(CANINTF) & 0x01):
-                len = self.read_byte(RXB0DLC)
-                buf = bytearray(len)
-                for i in range(len):
-                   buf[i] = self.read_byte(RXB0D0 + i)
-                self.write_byte(CANINTF, 0);
-                self.write_byte(CANINTE, 0x01)  # enable
-                self.write_byte(RXB0SIDH, 0x00) # clean
-                self.write_byte(RXB0SIDL, 0x60)
-                return buf
+
+        # Only the lower four bits contain DLC
+        dlc = self.read_byte(dlc_addr) & 0x0F
+
+        # CAN 2.0 payload is at most 8 bytes
+        if dlc > 8:
+            dlc = 8
+
+        data = bytearray(dlc)
+
+        for i in range(dlc):
+            data[i] = self.read_byte(data_addr + i)
+
+        return can_id, data
+
+
+    def recv(self):
+        """
+        Return the next received standard CAN frame.
+
+        Returns:
+            (can_id, data), or None if no frame is waiting.
+        """
+
+        CANINTF = 0x2C
+
+        RX0IF = 0x01
+        RX1IF = 0x02
+
+        flags = self.read_byte(CANINTF)
+
+        # Receive Buffer 0
+        if flags & RX0IF:
+            can_id, data = self._read_rx_buffer(
+                0x61,   # RXB0SIDH
+                0x65,   # RXB0DLC
+                0x66    # RXB0D0
+            )
+
+            # Clear only RX0IF, preserving all other interrupt flags
+            self.write_byte(CANINTF, flags & ~RX0IF)
+
+            return can_id, data
+
+        # Receive Buffer 1
+        if flags & RX1IF:
+            can_id, data = self._read_rx_buffer(
+                0x71,   # RXB1SIDH
+                0x75,   # RXB1DLC
+                0x76    # RXB1D0
+            )
+
+            # Clear only RX1IF, preserving all other interrupt flags
+            self.write_byte(CANINTF, flags & ~RX1IF)
+
+            return can_id, data
+
+        return None
             
     def int_callback(self, pin):
         self.recv_flag = True
